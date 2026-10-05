@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Space Booking System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- IST Clock & Status Bar -->
+  <header class="top-bar">
+    <div class="ist-clock-pill">
+      <span class="live-dot"></span>
+      <span id="ist-clock">IST: Loading...</span>
+    </div>
+    <div class="api-status-pill" id="api-status">
+      <span class="status-dot"></span>
+      <span id="api-status-text">Connected to NocoDB</span>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- Header with animated dynamic text matching reference -->
+    <section class="title-section">
+      <h1 class="main-heading">
+        Book a space for your next <span id="animated-word" class="highlight-word">Session</span>
+      </h1>
+    </section>
+
+    <!-- Filter selectors -->
+    <section class="controls-card">
+      <div class="filter-group">
+        <label for="day-select">Day:</label>
+        <div class="select-wrapper">
+          <select id="day-select">
+            <option value="Monday">Monday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label for="slot-select">Slot:</label>
+        <div class="select-wrapper">
+          <select id="slot-select">
+            <option value="1">Period 1 (8:45 - 10:45)</option>
+            <option value="2">Period 2 (11:15 - 1:15)</option>
+            <option value="3">Period 3 (2:00 - 4:30)</option>
+          </select>
+        </div>
+      </div>
+
+      <button id="refresh-btn" class="btn-refresh" title="Reload live slots" aria-label="Refresh slots">
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>Refresh</span>
+      </button>
+    </section>
+
+    <!-- Notice banner for past slots in IST -->
+    <div id="past-slot-banner" class="notice-banner hidden">
+      <span>⏳ This slot has already passed for today according to Indian Standard Time (IST). Booking is disabled for past periods.</span>
+    </div>
+
+    <!-- Booking Table -->
+    <section class="table-container">
+      <table class="booking-table" id="booking-table">
+        <thead>
+          <tr>
+            <th class="col-space">Space</th>
+            <th class="col-booked">Booked?</th>
+            <th class="col-why">Why?</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <!-- Populated by JavaScript -->
+          <tr>
+            <td colspan="3" class="loading-cell">
+              <div class="spinner"></div>
+              <span>Fetching live bookings from NocoDB...</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- Modal Form: Book a spot -->
+  <div class="modal-overlay hidden" id="booking-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <button class="modal-close" id="modal-close-btn" aria-label="Close modal">&times;</button>
+      <h2 id="modal-title" class="modal-title">book a spot</h2>
+      
+      <form id="booking-form" novalidate>
+        <div class="form-group">
+          <label for="teacher-name">Name:</label>
+          <input type="text" id="teacher-name" placeholder="Full name here (e.g. Siddhant sir)" required autocomplete="off">
+        </div>
+
+        <div class="form-group">
+          <label for="modal-space">Space:</label>
+          <input type="text" id="modal-space" readonly class="readonly-input">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="modal-day">Day:</label>
+            <select id="modal-day">
+              <option value="Monday">Monday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+              <option value="Thursday">Thursday</option>
+              <option value="Friday">Friday</option>
+              <option value="Saturday">Saturday</option>
+            </select>
+          </div>
+
+          <div class="form-group half">
+            <label for="modal-slot">Time slot:</label>
+            <select id="modal-slot">
+              <option value="1">Period 1 (8:45 - 10:45)</option>
+              <option value="2">Period 2 (11:15 - 1:15)</option>
+              <option value="3">Period 3 (2:00 - 4:30)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="booking-reason">Reason:</label>
+          <input type="text" id="booking-reason" placeholder="e.g.: 7th grade French class" required autocomplete="off">
+        </div>
+
+        <div id="form-error" class="form-error-msg hidden"></div>
+
+        <button type="submit" id="submit-booking-btn" class="btn-submit">
+          <span class="btn-text">Confirm Booking</span>
+          <span class="spinner btn-spinner hidden"></span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Success Notification Modal (Frame matching reference) -->
+  <div class="modal-overlay hidden" id="success-modal" role="dialog" aria-modal="true">
+    <div class="modal-card success-card">
+      <div class="check-circle-icon">
+        <svg viewBox="0 0 52 52" class="checkmark">
+          <circle class="checkmark-circle" cx="26" cy="26" r="24" fill="none"/>
+          <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+        </svg>
+      </div>
+      <p id="success-message" class="success-text">Spot booked successfully!</p>
+      <button id="success-close-btn" class="btn-primary-sm">Great, Got it!</button>
+    </div>
+  </div>
+
+  <!-- Toast Message -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
